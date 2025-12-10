@@ -1,0 +1,209 @@
+@model IEnumerable<finalproject.Models.Product>
+@{
+    ViewData["Title"] = "All Products - Admin Panel";
+}
+@Html.AntiForgeryToken()
+
+<style>
+    .text-red { color: #92000A !important; }
+    .text-green { color: #4A5D23 !important; }
+    .text-blue { color: #456178 !important; }
+    .text-yellow { color: #cba135 !important; }
+    .bg-red { background-color: #92000A !important; color: white !important; }
+    .bg-green { background-color: #4A5D23 !important; color: white !important; }
+    .bg-blue { background-color: #456178 !important; color: white !important; }
+    .bg-yellow { background-color: #cba135 !important; color: white !important; }
+    
+    .btn-borderless {
+        border: none;
+        background: transparent;
+        padding: 0.25rem 0.5rem;
+        color: var(--primary-color);
+        transition: all 0.2s;
+    }
+    .btn-borderless:hover {
+        background: rgba(0,0,0,0.05);
+        color: var(--primary-color);
+    }
+    .btn-borderless:focus {
+        box-shadow: none;
+        outline: none;
+    }
+</style>
+
+<div class="container my-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0"><i class="fas fa-boxes me-2"></i>All Products</h2>
+        <div>
+            <a asp-action="Create" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Add New Product
+            </a>
+            <a asp-action="Index" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Image</th>
+                            <th>Name</th>
+                            <th>Category</th>
+                            <th>SubCategory</th>
+                            <th>Price</th>
+                            <th>Stock</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Any())
+                        {
+                            @foreach (var product in Model)
+                            {
+                                <tr>
+                                    <td>@product.Id</td>
+                                    <td>
+                                        <img src="@product.ImagePath" alt="@product.Name" 
+                                             class="img-thumbnail" 
+                                             style="width: 60px; height: 60px; object-fit: cover;"
+                                             onerror="this.src='https://via.placeholder.com/60x60?text=No+Image'" />
+                                    </td>
+                                    <td class="fw-semibold">@product.Name</td>
+                                    <td><span class="badge bg-secondary">@product.Category</span></td>
+                                    <td><span class="badge bg-blue">@product.SubCategory</span></td>
+                                    <td class="fw-bold">$@product.Price.ToString("F2")</td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="badge @(product.Stock < 10 ? "bg-red" : product.Stock < 50 ? "bg-yellow" : "bg-green")">
+                                                @product.Stock
+                                            </span>
+                                            <button class="btn-borderless" 
+                                                    onclick="quickStockUpdate(@product.Id, @product.Stock)"
+                                                    title="Update Stock">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-2">
+                                            <a asp-action="Edit" asp-route-id="@product.Id" class="btn-borderless" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a asp-action="Delete" asp-route-id="@product.Id" class="btn-borderless text-red" title="Delete">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-4">
+                                    <i class="fas fa-box-open fa-3x mb-3 d-block"></i>
+                                    No products found. <a asp-action="Create">Add your first product</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Stock Update Modal -->
+<div class="modal fade" id="stockModal" tabindex="-1" aria-labelledby="stockModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="stockModalLabel">Update Stock</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="stockProductId" />
+                <div class="mb-3">
+                    <label for="stockQuantity" class="form-label">Stock Quantity</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control" id="stockQuantity" min="0" />
+                        <button type="button" class="btn btn-outline-success" onclick="adjustModalStock(10)">
+                            <i class="fas fa-plus"></i> +10
+                        </button>
+                        <button type="button" class="btn btn-outline-success" onclick="adjustModalStock(1)">
+                            <i class="fas fa-plus"></i> +1
+                        </button>
+                        <button type="button" class="btn btn-outline-danger" onclick="adjustModalStock(-1)">
+                            <i class="fas fa-minus"></i> -1
+                        </button>
+                        <button type="button" class="btn btn-outline-danger" onclick="adjustModalStock(-10)">
+                            <i class="fas fa-minus"></i> -10
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveStockUpdate()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function quickStockUpdate(productId, currentStock) {
+            document.getElementById('stockProductId').value = productId;
+            document.getElementById('stockQuantity').value = currentStock;
+            const modal = new bootstrap.Modal(document.getElementById('stockModal'));
+            modal.show();
+        }
+
+        function adjustModalStock(change) {
+            const stockInput = document.getElementById('stockQuantity');
+            const currentStock = parseInt(stockInput.value) || 0;
+            stockInput.value = Math.max(0, currentStock + change);
+        }
+
+        function saveStockUpdate() {
+            const productId = parseInt(document.getElementById('stockProductId').value);
+            const newStock = parseInt(document.getElementById('stockQuantity').value);
+
+            if (isNaN(newStock) || newStock < 0) {
+                alert('Please enter a valid stock quantity');
+                return;
+            }
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+
+            fetch('/Admin/UpdateStock', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': token
+                },
+                body: `productId=${productId}&newStock=${newStock}&__RequestVerificationToken=${token}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('stockModal'));
+                    modal.hide();
+                    location.reload();
+                } else {
+                    alert(data.message || 'Failed to update stock');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while updating stock');
+            });
+        }
+    </script>
+}
+

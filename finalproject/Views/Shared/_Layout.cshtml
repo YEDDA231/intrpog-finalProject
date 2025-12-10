@@ -1,0 +1,165 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - JOEB N FRIENDS</title>
+    <link rel="icon" type="image/png" href="~/images/logo.png" />
+    <script type="importmap"></script>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/finalproject.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+</head>
+<body>
+    <!-- Main Navigation -->
+    <header class="main-header">
+        <nav class="navbar navbar-expand-lg navbar-light bg-white">
+            <div class="container-fluid px-4">
+                <a class="navbar-brand fw-bold fs-3 d-flex align-items-center" asp-area="" asp-controller="Home" asp-action="Index">
+                    <img src="~/images/logo.png" alt="JOEB N FRIENDS" style="height: 40px; margin-right: 10px;" onerror="this.style.display='none'" />
+                    JOEB N FRIENDS
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    @if (ViewContext.RouteData.Values["controller"]?.ToString() != "Admin" && !User.IsInRole("Admin"))
+                    {
+                        <ul class="navbar-nav mx-auto">
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Product" asp-action="Index" asp-route-category="SHIRTS">SHIRTS</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Product" asp-action="Index" asp-route-category="PANTS">PANTS</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Product" asp-action="Index" asp-route-category="SHOES">SHOES</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Product" asp-action="Index" asp-route-category="DRESS">DRESSES</a>
+                            </li>
+                        </ul>
+                    }
+                    <ul class="navbar-nav">
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-user"></i> @User.Identity.Name
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="userDropdown">
+                                    @if (User.IsInRole("Admin"))
+                                    {
+                                        <li><a class="dropdown-item" asp-controller="Admin" asp-action="Index"><i class="fas fa-cog"></i> Admin Panel</a></li>
+                                        <li><a class="dropdown-item" asp-controller="Admin" asp-action="Orders"><i class="fas fa-shopping-bag"></i> View Orders</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                    }
+                                    @if (!User.IsInRole("Admin") && ViewContext.RouteData.Values["controller"]?.ToString() != "Admin")
+                                    {
+                                        <li><a class="dropdown-item" asp-controller="Orders" asp-action="Index"><i class="fas fa-shopping-bag"></i> My Orders</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                    }
+                                    <li>
+                                        <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                                            <button type="submit" class="dropdown-item"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Account" asp-action="Login"><i class="fas fa-user"></i> Login</a>
+                            </li>
+                        }
+                        @if (ViewContext.RouteData.Values["controller"]?.ToString() != "Admin" && !User.IsInRole("Admin"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" href="#" title="Search"><i class="fas fa-search"></i></a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link position-relative" asp-controller="Cart" asp-action="Index" title="Shopping Bag">
+                                    <i class="fas fa-shopping-bag"></i>
+                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger cart-badge" style="font-size: 0.6rem; display: none;">
+                                        0
+                                    </span>
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Promo Banner - Below Nav Bar, Closable -->
+    <div class="promo-banner text-center py-2" id="promoBanner">
+        <div class="container position-relative">
+            <p class="mb-0">FREE SHIPPING ON ORDERS OVER $75!*</p>
+            <button type="button" class="close-btn" onclick="closePromoBanner()" aria-label="Close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+
+    <main role="main">
+        @RenderBody()
+    </main>
+
+    @if (ViewContext.RouteData.Values["controller"]?.ToString() != "Admin")
+    {
+        <footer class="footer mt-auto bg-dark text-white">
+            <div class="container py-2">
+                <div class="row align-items-center justify-content-center">
+                    <div class="col-auto">
+                        <div class="social-links">
+                            <a href="#" class="text-white-50 me-2" title="Facebook"><i class="fab fa-facebook" style="font-size: 0.9rem;"></i></a>
+                            <a href="#" class="text-white-50 me-2" title="Instagram"><i class="fab fa-instagram" style="font-size: 0.9rem;"></i></a>
+                            <a href="#" class="text-white-50" title="Twitter"><i class="fab fa-twitter" style="font-size: 0.9rem;"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    }
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script>
+        // Show promo banner if not closed
+        document.addEventListener('DOMContentLoaded', function() {
+            const promoBanner = document.getElementById('promoBanner');
+            if (promoBanner && !localStorage.getItem('promoBannerClosed')) {
+                promoBanner.classList.add('show');
+            }
+
+            // Load cart count on page load
+            fetch('/Cart/GetCartCount')
+                .then(response => response.json())
+                .then(data => {
+                    const badge = document.querySelector('.cart-badge');
+                    if (badge) {
+                        badge.textContent = data.count;
+                        badge.style.display = data.count > 0 ? 'inline' : 'none';
+                    }
+                })
+                .catch(error => console.error('Error loading cart count:', error));
+        });
+
+        function closePromoBanner() {
+            const promoBanner = document.getElementById('promoBanner');
+            if (promoBanner) {
+                promoBanner.style.transition = 'opacity 0.3s ease-out';
+                promoBanner.style.opacity = '0';
+                setTimeout(() => {
+                    promoBanner.classList.remove('show');
+                    localStorage.setItem('promoBannerClosed', 'true');
+                }, 300);
+            }
+        }
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

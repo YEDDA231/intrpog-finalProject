@@ -1,0 +1,267 @@
+@model List<finalproject.Controllers.CartItemViewModel>
+@{
+    ViewData["Title"] = "Shopping Cart - JOEB N FRIENDS";
+    var cartTotal = ViewBag.CartTotal as decimal? ?? 0;
+    var cartCount = ViewBag.CartCount as int? ?? 0;
+}
+
+<div class="container my-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="fw-bold">Shopping Bag</h1>
+        <span class="text-muted">@cartCount item(s)</span>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (Model.Any())
+    {
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Price</th>
+                                        <th>Quantity</th>
+                                        <th>Subtotal</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in Model)
+                                    {
+                                        <tr id="cart-item-@item.ProductId">
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <img src="@item.ProductImage" alt="@item.ProductName" 
+                                                         class="rounded me-3" style="width: 80px; height: 80px; object-fit: cover;"
+                                                         onerror="this.src='https://via.placeholder.com/80x80'">
+                                                    <div>
+                                                        <h6 class="mb-0">@item.ProductName</h6>
+                                                        @if (item.Stock < 10)
+                                                        {
+                                                            <small class="text-danger">Only @item.Stock left in stock</small>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="align-middle">$@item.Price.ToString("F2")</td>
+                                            <td class="align-middle">
+                                                <div class="d-flex flex-column align-items-center">
+                                                    <label class="form-label mb-2 fw-bold" style="font-size: 0.85rem; color: var(--primary-color);">Quantity</label>
+                                                    <div class="input-group" style="width: 150px;">
+                                                        <button class="btn btn-outline-secondary btn-sm" type="button" 
+                                                                onclick="decreaseQuantity(@item.ProductId, @item.Stock)">
+                                                            <i class="fas fa-minus"></i>
+                                                        </button>
+                                                        <input type="number" class="form-control text-center fw-bold" 
+                                                               id="quantity-@item.ProductId" value="@item.Quantity" min="1" max="@item.Stock"
+                                                               onchange="updateQuantityFromInput(@item.ProductId, this.value, @item.Stock)"
+                                                               style="font-size: 1rem; font-weight: bold; color: var(--primary-color);">
+                                                        <button class="btn btn-outline-secondary btn-sm" type="button" 
+                                                                onclick="increaseQuantity(@item.ProductId, @item.Stock)">
+                                                            <i class="fas fa-plus"></i>
+                                                        </button>
+                                                    </div>
+                                                    <small class="text-muted d-block mt-2" style="font-size: 0.75rem;">Max: @item.Stock</small>
+                                                </div>
+                                            </td>
+                                            <td class="align-middle fw-bold" id="subtotal-@item.ProductId">$@item.Subtotal.ToString("F2")</td>
+                                            <td class="align-middle">
+                                                <button class="btn btn-outline-danger btn-sm" onclick="removeFromCart(@item.ProductId)" title="Remove">
+                                                    <i class="fas fa-trash"></i> Remove
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm sticky-top" style="top: 20px;">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">Order Summary</h5>
+                        <div class="d-flex justify-content-between mb-3">
+                            <span>Subtotal</span>
+                            <span id="cart-total">$@cartTotal.ToString("F2")</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-3">
+                            <span>Shipping</span>
+                            <span class="text-success">FREE</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between mb-4">
+                            <strong>Total</strong>
+                            <strong id="cart-total-final">$@cartTotal.ToString("F2")</strong>
+                        </div>
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <a asp-controller="Checkout" asp-action="Index" class="btn btn-primary w-100 btn-lg">
+                                Proceed to Checkout <i class="fas fa-arrow-right ms-2"></i>
+                            </a>
+                        }
+                        else
+                        {
+                            <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="/Cart" class="btn btn-primary w-100 btn-lg">
+                                Login to Checkout <i class="fas fa-sign-in-alt ms-2"></i>
+                            </a>
+                        }
+                        <a asp-controller="Product" asp-action="Index" class="btn btn-outline-secondary w-100 mt-2">
+                            Continue Shopping
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="text-center py-5">
+            <i class="fas fa-shopping-bag fa-4x text-muted mb-3"></i>
+            <h3 class="mb-3">Your bag is empty</h3>
+            <p class="text-muted mb-4">Start shopping to add items to your bag</p>
+            <a asp-controller="Product" asp-action="Index" class="btn btn-primary btn-lg">
+                Shop Now
+            </a>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    @Html.AntiForgeryToken()
+    <script>
+        function decreaseQuantity(productId, maxStock) {
+            const input = document.getElementById('quantity-' + productId);
+            const currentQuantity = parseInt(input.value) || 1;
+            if (currentQuantity > 1) {
+                updateQuantity(productId, currentQuantity - 1, maxStock);
+            } else {
+                if (confirm('Remove this item from your cart?')) {
+                    removeFromCart(productId);
+                }
+            }
+        }
+
+        function increaseQuantity(productId, maxStock) {
+            const input = document.getElementById('quantity-' + productId);
+            const currentQuantity = parseInt(input.value) || 1;
+            if (currentQuantity < maxStock) {
+                updateQuantity(productId, currentQuantity + 1, maxStock);
+            } else {
+                alert('Only ' + maxStock + ' items available in stock');
+            }
+        }
+
+        function updateQuantityFromInput(productId, quantity, maxStock) {
+            const qty = parseInt(quantity) || 1;
+            if (qty < 1) {
+                if (confirm('Remove this item from your cart?')) {
+                    removeFromCart(productId);
+                    return;
+                } else {
+                    document.getElementById('quantity-' + productId).value = 1;
+                    return;
+                }
+            }
+            if (qty > maxStock) {
+                alert('Only ' + maxStock + ' items available in stock');
+                document.getElementById('quantity-' + productId).value = maxStock;
+                updateQuantity(productId, maxStock, maxStock);
+                return;
+            }
+            updateQuantity(productId, qty, maxStock);
+        }
+
+        function updateQuantity(productId, quantity, maxStock) {
+            if (quantity < 1) {
+                removeFromCart(productId);
+                return;
+            }
+
+            if (quantity > maxStock) {
+                alert('Only ' + maxStock + ' items available in stock');
+                quantity = maxStock;
+                document.getElementById('quantity-' + productId).value = maxStock;
+            }
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+            fetch('/Cart/UpdateQuantity', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token
+                },
+                body: JSON.stringify({ productId: productId, quantity: parseInt(quantity) || 1 })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('subtotal-' + productId).textContent = '$' + data.itemSubtotal;
+                    document.getElementById('cart-total').textContent = '$' + data.cartTotal;
+                    document.getElementById('cart-total-final').textContent = '$' + data.cartTotal;
+                    document.getElementById('quantity-' + productId).value = quantity;
+                    updateCartBadge(data.cartCount);
+                } else {
+                    alert(data.message || 'Failed to update quantity');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while updating quantity');
+            });
+        }
+
+        function removeFromCart(productId) {
+            if (!confirm('Are you sure you want to remove this item from your cart?')) {
+                return;
+            }
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+            fetch('/Cart/RemoveFromCart', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token
+                },
+                body: JSON.stringify({ productId: productId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('cart-item-' + productId).remove();
+                    document.getElementById('cart-total').textContent = '$' + data.cartTotal;
+                    document.getElementById('cart-total-final').textContent = '$' + data.cartTotal;
+                    updateCartBadge(data.cartCount);
+                    
+                    // Reload if cart is empty
+                    if (data.cartCount === 0) {
+                        location.reload();
+                    }
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function updateCartBadge(count) {
+            const badge = document.querySelector('.cart-badge');
+            if (badge) {
+                badge.textContent = count;
+                badge.style.display = count > 0 ? 'inline' : 'none';
+            }
+        }
+    </script>
+}
+

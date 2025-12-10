@@ -1,0 +1,164 @@
+@model finalproject.Models.Product
+@{
+    ViewData["Title"] = "Edit Product - Admin Panel";
+}
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-dark text-white">
+                    <h4 class="mb-0">Edit Product</h4>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="Edit" method="post" enctype="multipart/form-data">
+                        <input type="hidden" asp-for="Id" />
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Name" class="form-label">Product Name</label>
+                                <input asp-for="Name" class="form-control" />
+                                <span asp-validation-for="Name" class="text-danger"></span>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Price" class="form-label">Price</label>
+                                <input asp-for="Price" class="form-control" type="number" step="0.01" />
+                                <span asp-validation-for="Price" class="text-danger"></span>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Category" class="form-label">Category</label>
+                                <select asp-for="Category" class="form-select">
+                                    <option value="">Select Category</option>
+                                    <option value="SHIRTS">SHIRTS</option>
+                                    <option value="PANTS">PANTS</option>
+                                    <option value="SHOES">SHOES</option>
+                                    <option value="DRESS">DRESS</option>
+                                </select>
+                                <span asp-validation-for="Category" class="text-danger"></span>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="SubCategory" class="form-label">Subcategory</label>
+                                <input asp-for="SubCategory" class="form-control" />
+                                <span asp-validation-for="SubCategory" class="text-danger"></span>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Product Image</label>
+                            @if (!string.IsNullOrEmpty(Model.ImagePath))
+                            {
+                                <div class="mb-2">
+                                    <p class="text-muted small">Current Image:</p>
+                                    <img src="@Model.ImagePath" alt="@Model.Name" class="img-thumbnail mb-2" style="max-width: 200px; max-height: 200px;" onerror="this.style.display='none'" />
+                                </div>
+                            }
+                            <div class="mb-2">
+                                <label for="imageFile" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-upload me-2"></i>Upload New Image
+                                </label>
+                                <input type="file" id="imageFile" name="imageFile" accept="image/*" class="d-none" onchange="previewImage(this, 'singlePreview')" />
+                                <small class="text-muted ms-2">or</small>
+                                <label for="imageFiles" class="btn btn-outline-info btn-sm">
+                                    <i class="fas fa-folder me-2"></i>Upload Image Folder
+                                </label>
+                                <input type="file" id="imageFiles" name="imageFiles" accept="image/*" multiple class="d-none" onchange="previewImage(this, 'multiplePreview')" />
+                            </div>
+                            <div id="singlePreview" class="mt-2"></div>
+                            <div id="multiplePreview" class="mt-2"></div>
+                            <div class="mt-2">
+                                <label asp-for="ImagePath" class="form-label">Or Enter Image Path Manually</label>
+                                <input asp-for="ImagePath" class="form-control" />
+                                <span asp-validation-for="ImagePath" class="text-danger"></span>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label asp-for="Description" class="form-label">Description</label>
+                            <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                            <span asp-validation-for="Description" class="text-danger"></span>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label asp-for="Stock" class="form-label">Stock Quantity</label>
+                            <div class="input-group">
+                                <input asp-for="Stock" class="form-control" type="number" id="stockInput" />
+                                <button type="button" class="btn btn-outline-success" onclick="adjustStock(10)">
+                                    <i class="fas fa-plus"></i> +10
+                                </button>
+                                <button type="button" class="btn btn-outline-success" onclick="adjustStock(1)">
+                                    <i class="fas fa-plus"></i> +1
+                                </button>
+                                <button type="button" class="btn btn-outline-danger" onclick="adjustStock(-1)">
+                                    <i class="fas fa-minus"></i> -1
+                                </button>
+                                <button type="button" class="btn btn-outline-danger" onclick="adjustStock(-10)">
+                                    <i class="fas fa-minus"></i> -10
+                                </button>
+                            </div>
+                            <span asp-validation-for="Stock" class="text-danger"></span>
+                            <small class="form-text text-muted">Current stock: <strong id="currentStock">@Model.Stock</strong></small>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        function previewImage(input, previewId) {
+            const preview = document.getElementById(previewId);
+            preview.innerHTML = '';
+            
+            if (input.files && input.files.length > 0) {
+                const files = input.files;
+                const maxFiles = input.multiple ? 5 : 1;
+                
+                for (let i = 0; i < Math.min(files.length, maxFiles); i++) {
+                    const file = files[i];
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(e) {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.className = 'img-thumbnail me-2 mb-2';
+                        img.style.maxWidth = '150px';
+                        img.style.maxHeight = '150px';
+                        preview.appendChild(img);
+                    };
+                    
+                    reader.readAsDataURL(file);
+                }
+                
+                if (files.length > maxFiles) {
+                    const more = document.createElement('p');
+                    more.className = 'text-muted small';
+                    more.textContent = `+ ${files.length - maxFiles} more file(s)`;
+                    preview.appendChild(more);
+                }
+            }
+        }
+
+        function adjustStock(change) {
+            const stockInput = document.getElementById('stockInput');
+            const currentStock = parseInt(stockInput.value) || 0;
+            const newStock = Math.max(0, currentStock + change);
+            stockInput.value = newStock;
+            document.getElementById('currentStock').textContent = newStock;
+        }
+    </script>
+}
+

@@ -1,0 +1,320 @@
+@model finalproject.Models.Product
+@{
+    ViewData["Title"] = Model.Name + " - JOEB N FRIENDS";
+    var relatedProducts = ViewBag.RelatedProducts as List<finalproject.Models.Product> ?? new List<finalproject.Models.Product>();
+}
+@Html.AntiForgeryToken()
+
+<div class="container my-5">
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm">
+                <img src="@Model.ImagePath" alt="@Model.Name" class="card-img-top product-detail-image" style="border-radius: 12px 12px 0 0;" onerror="this.src='https://via.placeholder.com/500x500?text=No+Image'">
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="sticky-top" style="top: 100px;">
+                <h1 class="mb-3 fw-bold">@Model.Name</h1>
+                <h2 class="mb-4" style="color: var(--accent-color);">$@Model.Price.ToString("F2")</h2>
+                
+                <div class="mb-4">
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="badge bg-secondary me-2">@Model.Category</span>
+                        <span class="badge bg-light text-dark">@Model.SubCategory</span>
+                    </div>
+                    <p class="mb-2">
+                        <i class="fas fa-box me-2"></i>
+                        <strong>Available Stock:</strong> 
+                        @if (Model.Stock > 0)
+                        {
+                            <span class="@(Model.Stock < 10 ? "text-danger fw-bold" : "text-success")">
+                                @Model.Stock @(Model.Stock < 10 ? "(Low Stock)" : "in stock")
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="text-danger fw-bold">Out of Stock</span>
+                        }
+                    </p>
+                </div>
+                
+                @if (!string.IsNullOrEmpty(Model.Description))
+                {
+                    <div class="mb-4">
+                        <h5 class="fw-bold mb-3">Description</h5>
+                        <p class="text-muted" style="line-height: 1.8;">@Model.Description</p>
+                    </div>
+                }
+                
+                <div class="mb-4">
+                    @if (Model.Stock > 0)
+                    {
+                        <label class="form-label fw-semibold">Quantity</label>
+                        <div class="input-group mb-2" style="max-width: 200px;">
+                            <button class="btn btn-outline-secondary" type="button" onclick="decreaseQuantity()">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <input type="number" id="quantity-input" class="form-control text-center" value="1" min="1" max="@Model.Stock" onchange="validateQuantity()">
+                            <button class="btn btn-outline-secondary" type="button" onclick="increaseQuantity()">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted">Maximum @Model.Stock available</small>
+                    }
+                </div>
+                
+                <div class="d-grid gap-2 mb-4">
+                    @if (!User.IsInRole("Admin"))
+                    {
+                        @if (Model.Stock > 0)
+                        {
+                            <button class="btn btn-primary btn-lg" onclick="addToCart(@Model.Id)">
+                                <i class="fas fa-shopping-bag me-2"></i> Add to Bag
+                            </button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-secondary btn-lg" disabled>
+                                <i class="fas fa-times-circle me-2"></i> Out of Stock
+                            </button>
+                        }
+                    }
+                    <button class="btn btn-outline-primary" onclick="window.history.back()">
+                        <i class="fas fa-arrow-left me-2"></i> Back to Products
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    @if (relatedProducts.Any())
+    {
+        <hr class="my-5">
+        <div class="text-center mb-4">
+            <h3 class="fw-bold mb-2">You May Also Like</h3>
+            <p class="text-muted">Similar products you might enjoy</p>
+        </div>
+        <div class="product-grid">
+            @foreach (var product in relatedProducts)
+            {
+                <div class="product-card" onclick="location.href='@Url.Action("Details", new { id = product.Id })'">
+                    <div class="product-image-wrapper">
+                        <img src="@product.ImagePath" alt="@product.Name" class="product-image" onerror="this.src='https://via.placeholder.com/300x300?text=No+Image'">
+                    </div>
+                    <div class="product-info">
+                        <div class="product-name">@product.Name</div>
+                        <div class="product-price">$@product.Price.ToString("F2")</div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<style>
+.toast-notification {
+    position: fixed;
+    top: 100px;
+    right: 20px;
+    background: white;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 0;
+    z-index: 9999;
+    max-width: 350px;
+    opacity: 0;
+    transform: translateX(400px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toast-notification.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.toast-notification.toast-success .toast-content {
+    border-left: 4px solid var(--tertiary-color);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.toast-notification.toast-error .toast-content {
+    border-left: 4px solid #dc3545;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.toast-content {
+    color: var(--primary-color);
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.toast-close {
+    background: transparent;
+    border: none;
+    color: var(--primary-color);
+    cursor: pointer;
+    padding: 0;
+    font-size: 1rem;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.toast-close:hover {
+    opacity: 1;
+}
+
+@@media (max-width: 576px) {
+    .toast-notification {
+        right: 10px;
+        left: 10px;
+        max-width: calc(100% - 20px);
+        transform: translateY(-100px);
+    }
+    
+    .toast-notification.show {
+        transform: translateY(0);
+    }
+}
+</style>
+
+@section Scripts {
+    <script>
+        function increaseQuantity() {
+            const input = document.getElementById('quantity-input');
+            const max = parseInt(input.max);
+            const current = parseInt(input.value) || 1;
+            if (current < max) {
+                input.value = current + 1;
+            } else {
+                alert(`Only ${max} items available in stock`);
+            }
+        }
+
+        function decreaseQuantity() {
+            const input = document.getElementById('quantity-input');
+            const current = parseInt(input.value) || 1;
+            if (current > 1) {
+                input.value = current - 1;
+            }
+        }
+
+        function validateQuantity() {
+            const input = document.getElementById('quantity-input');
+            if (!input) return;
+            const max = parseInt(input.max);
+            const current = parseInt(input.value) || 1;
+            if (current > max) {
+                input.value = max;
+                alert(`Only ${max} items available in stock`);
+            } else if (current < 1) {
+                input.value = 1;
+            }
+        }
+
+        function validateQuantity() {
+            const input = document.getElementById('quantity-input');
+            const max = parseInt(input.max);
+            const current = parseInt(input.value) || 1;
+            if (current > max) {
+                input.value = max;
+                alert(`Only ${max} items available in stock`);
+            } else if (current < 1) {
+                input.value = 1;
+            }
+        }
+
+        function addToCart(productId) {
+            const quantity = parseInt(document.getElementById('quantity-input').value);
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+            
+            // Disable button during request
+            const btn = event.target.closest('button');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Adding...';
+            
+            fetch('/Cart/AddToCart', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token
+                },
+                body: JSON.stringify({ productId: productId, quantity: quantity })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show toast notification
+                    showToast('success', '<i class="fas fa-check-circle me-2"></i> ' + data.message || 'Product added to bag!');
+                    
+                    // Update cart badge
+                    updateCartBadge(data.cartCount);
+                } else {
+                    showToast('error', '<i class="fas fa-exclamation-circle me-2"></i> ' + (data.message || 'Failed to add product to bag'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('error', '<i class="fas fa-exclamation-circle me-2"></i> An error occurred while adding the product to bag');
+            })
+            .finally(() => {
+                // Re-enable button
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            });
+        }
+
+        function showToast(type, message) {
+            // Remove existing toasts
+            const existingToasts = document.querySelectorAll('.toast-notification');
+            existingToasts.forEach(toast => toast.remove());
+            
+            const toast = document.createElement('div');
+            toast.className = `toast-notification toast-${type}`;
+            toast.innerHTML = `
+                <div class="toast-content">
+                    ${message}
+                    <button type="button" class="toast-close" onclick="this.parentElement.parentElement.remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            
+            // Animate in
+            setTimeout(() => toast.classList.add('show'), 10);
+            
+            // Auto-dismiss after 4 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        function updateCartBadge(count) {
+            const badge = document.querySelector('.cart-badge');
+            if (badge) {
+                badge.textContent = count;
+                badge.style.display = count > 0 ? 'inline' : 'none';
+            }
+        }
+
+        // Load cart count on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('/Cart/GetCartCount')
+                .then(response => response.json())
+                .then(data => {
+                    updateCartBadge(data.count);
+                });
+        });
+    </script>
+}
+
